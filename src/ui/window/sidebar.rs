@@ -326,6 +326,7 @@ impl SidebarState {
             places_visibility: RefCell::new(places_visibility),
             pinned_places: Rc::new(RefCell::new(crate::adapters::bookmarks::current())),
             place_rows: RefCell::new(Vec::new()),
+            pending_place: RefCell::new(None),
             trash_contents: Cell::new(TrashContents::Unknown),
             trash_menu_rows: RefCell::new(None),
             trash_monitor: RefCell::new(None),

@@ -2,7 +2,7 @@
 
 //! The standard, recent and pinned places listed in the sidebar.
 
-use std::rc::Rc;
+use std::{rc::Rc, time::Duration};
 
 use gtk::prelude::*;
 
@@ -18,8 +18,10 @@ use super::{
     },
     sidebar::PlaceNavigation,
     sidebar_context_menu::PlaceMenu,
-    sidebar_rows::{set_sidebar_row_active, sidebar_button, sync_keycap},
+    sidebar_rows::{select_sidebar_row, set_sidebar_row_active, sidebar_button, sync_keycap},
 };
+
+const PLACE_STEP_SETTLE: Duration = Duration::from_millis(150);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) struct RecentAvailability {
@@ -268,6 +270,9 @@ impl SidebarState {
     }
 
     pub(super) fn sync_active_place(&self) {
+        if self.pending_place.borrow().is_some() {
+            return;
+        }
         let active = self.browser.active_location();
         let rows = self.place_rows.borrow();
         let selected = rows
@@ -299,9 +304,10 @@ impl SidebarState {
             .is_some_and(|(_, row)| row.grab_focus())
     }
 
-    /// Opens the shown place after (or before) the active one, wrapping at the
-    /// ends. False when the sidebar shows no places.
-    pub(in crate::ui) fn step_place(&self, forward: bool) -> bool {
+    /// Highlights the shown place after (or before) the highlighted one, wrapping
+    /// at the ends, and opens it once Tab has rested, so held Tab skips places
+    /// without loading each. False when the sidebar shows no places.
+    pub(in crate::ui) fn step_place(self: &Rc<Self>, forward: bool) -> bool {
         let mut rows: Vec<(f32, gtk::Button)> = self
             .place_rows
             .borrow()
@@ -314,14 +320,29 @@ impl SidebarState {
         if count == 0 {
             return false;
         }
-        let active = rows.iter().position(|(_, row)| row.has_css_class("active"));
-        let next = match (active, forward) {
+        let pending = self.pending_place.take().map(|(row, source)| {
+            source.remove();
+            row
+        });
+        let current = rows.iter().position(|(_, row)| match &pending {
+            Some(pending) => row == pending,
+            None => row.has_css_class("active"),
+        });
+        let next = match (current, forward) {
             (Some(index), true) => (index + 1) % count,
             (Some(index), false) => (index + count - 1) % count,
             (None, true) => 0,
             (None, false) => count - 1,
         };
-        rows[next].1.emit_activate();
+        let row = rows.swap_remove(next).1;
+        select_sidebar_row(&self.widget, &row);
+        let state = Rc::downgrade(self);
+        let source = glib::timeout_add_local_once(PLACE_STEP_SETTLE, move || {
+            if let Some((row, _)) = state.upgrade().and_then(|state| state.pending_place.take()) {
+                row.emit_activate();
+            }
+        });
+        self.pending_place.replace(Some((row, source)));
         true
     }
 

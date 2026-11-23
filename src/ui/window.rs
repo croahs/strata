@@ -132,6 +132,8 @@ pub(super) struct SidebarState {
     places_visibility: RefCell<[bool; 10]>,
     pinned_places: Rc<RefCell<Vec<(Location, String)>>>,
     place_rows: RefCell<Vec<(Location, gtk::Button)>>,
+    /// The place Tab has highlighted but not opened yet, and the timer that opens it.
+    pending_place: RefCell<Option<(gtk::Button, glib::SourceId)>>,
     trash_contents: Cell<TrashContents>,
     trash_menu_rows: RefCell<Option<TrashMenuRows>>,
     trash_monitor: RefCell<Option<crate::services::LoadHandle>>,
