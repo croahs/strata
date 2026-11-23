@@ -45,7 +45,6 @@ impl Dispatcher {
         }
         let direction = plain_tab_direction(&event.press)?;
         if !event.text_has_focus()
-            && self.view.item_view_has_focus()
             && self
                 .sidebar
                 .state

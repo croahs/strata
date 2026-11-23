@@ -22,6 +22,14 @@ use super::{
 };
 
 const PLACE_STEP_SETTLE: Duration = Duration::from_millis(150);
+const PLACE_OPEN_FALLBACK: Duration = Duration::from_secs(3);
+
+pub(super) struct PendingPlace {
+    row: gtk::Button,
+    location: Location,
+    /// The settle timer, then the fallback that lets go if the place never opens.
+    source: glib::SourceId,
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) struct RecentAvailability {
@@ -270,7 +278,7 @@ impl SidebarState {
     }
 
     pub(super) fn sync_active_place(&self) {
-        if self.pending_place.borrow().is_some() {
+        if self.holds_pending_place() {
             return;
         }
         let active = self.browser.active_location();
@@ -308,23 +316,26 @@ impl SidebarState {
     /// at the ends, and opens it once Tab has rested, so held Tab skips places
     /// without loading each. False when the sidebar shows no places.
     pub(in crate::ui) fn step_place(self: &Rc<Self>, forward: bool) -> bool {
-        let mut rows: Vec<(f32, gtk::Button)> = self
+        let mut rows: Vec<(f32, Location, gtk::Button)> = self
             .place_rows
             .borrow()
             .iter()
             .filter(|(_, row)| row.is_mapped())
-            .filter_map(|(_, row)| Some((row.compute_bounds(&self.widget)?.y(), row.clone())))
+            .filter_map(|(location, row)| {
+                let y = row.compute_bounds(&self.widget)?.y();
+                Some((y, location.clone(), row.clone()))
+            })
             .collect();
         rows.sort_by(|a, b| a.0.total_cmp(&b.0));
         let count = rows.len();
         if count == 0 {
             return false;
         }
-        let pending = self.pending_place.take().map(|(row, source)| {
-            source.remove();
-            row
+        let pending = self.pending_place.take().map(|pending| {
+            pending.source.remove();
+            pending.row
         });
-        let current = rows.iter().position(|(_, row)| match &pending {
+        let current = rows.iter().position(|(_, _, row)| match &pending {
             Some(pending) => row == pending,
             None => row.has_css_class("active"),
         });
@@ -334,16 +345,52 @@ impl SidebarState {
             (None, true) => 0,
             (None, false) => count - 1,
         };
-        let row = rows.swap_remove(next).1;
+        let (_, location, row) = rows.swap_remove(next);
         select_sidebar_row(&self.widget, &row);
         let state = Rc::downgrade(self);
         let source = glib::timeout_add_local_once(PLACE_STEP_SETTLE, move || {
-            if let Some((row, _)) = state.upgrade().and_then(|state| state.pending_place.take()) {
-                row.emit_activate();
+            if let Some(state) = state.upgrade() {
+                state.open_pending_place();
             }
         });
-        self.pending_place.replace(Some((row, source)));
+        self.pending_place.replace(Some(PendingPlace {
+            row,
+            location,
+            source,
+        }));
         true
+    }
+
+    fn open_pending_place(self: &Rc<Self>) {
+        let Some(row) = self.pending_place.borrow().as_ref().map(|p| p.row.clone()) else {
+            return;
+        };
+        let state = Rc::downgrade(self);
+        let fallback = glib::timeout_add_local_once(PLACE_OPEN_FALLBACK, move || {
+            if let Some(state) = state.upgrade() {
+                state.pending_place.take();
+                state.sync_active_place();
+            }
+        });
+        if let Some(pending) = self.pending_place.borrow_mut().as_mut() {
+            pending.source = fallback;
+        }
+        row.emit_activate();
+    }
+
+    /// True while a Tab-stepped place is still on its way, which keeps its highlight.
+    fn holds_pending_place(&self) -> bool {
+        let mut pending = self.pending_place.borrow_mut();
+        let Some(place) = pending.as_ref() else {
+            return false;
+        };
+        if self.browser.active_location().as_ref() != Some(&place.location) {
+            return true;
+        }
+        if let Some(place) = pending.take() {
+            place.source.remove();
+        }
+        false
     }
 
     /// Pinned places in sidebar display order, excluding rows the sidebar hides.
