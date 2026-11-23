@@ -44,6 +44,15 @@ impl Dispatcher {
             return None;
         }
         let direction = plain_tab_direction(&event.press)?;
+        if !event.text_has_focus()
+            && self.view.item_view_has_focus()
+            && self
+                .sidebar
+                .state
+                .step_place(direction == gtk::DirectionType::TabForward)
+        {
+            return Some(Propagation::Stop);
+        }
         self.view
             .default_tab(direction)
             .then_some(Propagation::Stop)

@@ -299,6 +299,32 @@ impl SidebarState {
             .is_some_and(|(_, row)| row.grab_focus())
     }
 
+    /// Opens the shown place after (or before) the active one, wrapping at the
+    /// ends. False when the sidebar shows no places.
+    pub(in crate::ui) fn step_place(&self, forward: bool) -> bool {
+        let mut rows: Vec<(f32, gtk::Button)> = self
+            .place_rows
+            .borrow()
+            .iter()
+            .filter(|(_, row)| row.is_mapped())
+            .filter_map(|(_, row)| Some((row.compute_bounds(&self.widget)?.y(), row.clone())))
+            .collect();
+        rows.sort_by(|a, b| a.0.total_cmp(&b.0));
+        let count = rows.len();
+        if count == 0 {
+            return false;
+        }
+        let active = rows.iter().position(|(_, row)| row.has_css_class("active"));
+        let next = match (active, forward) {
+            (Some(index), true) => (index + 1) % count,
+            (Some(index), false) => (index + count - 1) % count,
+            (None, true) => 0,
+            (None, false) => count - 1,
+        };
+        rows[next].1.emit_activate();
+        true
+    }
+
     /// Pinned places in sidebar display order, excluding rows the sidebar hides.
     pub(in crate::ui) fn visible_pins(&self) -> Vec<Location> {
         self.visible_pins.borrow().clone()
