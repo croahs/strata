@@ -327,6 +327,7 @@ impl SidebarState {
             pinned_places: Rc::new(RefCell::new(crate::adapters::bookmarks::current())),
             place_rows: RefCell::new(Vec::new()),
             pending_place: RefCell::new(None),
+            keyboard_opened_place: Rc::new(RefCell::new(None)),
             trash_contents: Cell::new(TrashContents::Unknown),
             trash_menu_rows: RefCell::new(None),
             trash_monitor: RefCell::new(None),
@@ -431,11 +432,16 @@ impl SidebarState {
         install_open_in_tab(row, &self.view, &location, &self.drop_feedback);
         let browser = Rc::downgrade(&self.browser);
         let sidebar = self.widget.downgrade();
-        let keyboard_activation = Rc::new(Cell::new(false));
-        let activating = keyboard_activation.clone();
-        row.connect_activate(move |_| activating.set(true));
+        let keyboard_opened = self.keyboard_opened_place.clone();
+        let activating = keyboard_opened.clone();
+        row.connect_activate(move |row| {
+            activating.replace(Some(row.clone()));
+        });
         row.connect_clicked(move |row| {
-            let select_first = keyboard_activation.replace(false);
+            let select_first = keyboard_opened
+                .borrow_mut()
+                .take_if(|opened| opened == row)
+                .is_some();
             if let Some(sidebar) = sidebar.upgrade() {
                 select_sidebar_row(&sidebar, row);
             }

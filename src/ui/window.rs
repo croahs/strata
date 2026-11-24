@@ -134,6 +134,8 @@ pub(super) struct SidebarState {
     place_rows: RefCell<Vec<(Location, gtk::Button)>>,
     /// The place Tab stepped to, held highlighted until the browser shows it.
     pending_place: RefCell<Option<sidebar_places::PendingPlace>>,
+    /// The place row opened from the keyboard, whose click selects the first item.
+    keyboard_opened_place: Rc<RefCell<Option<gtk::Button>>>,
     trash_contents: Cell<TrashContents>,
     trash_menu_rows: RefCell<Option<TrashMenuRows>>,
     trash_monitor: RefCell<Option<crate::services::LoadHandle>>,

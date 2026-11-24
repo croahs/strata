@@ -375,7 +375,10 @@ impl SidebarState {
         if let Some(pending) = self.pending_place.borrow_mut().as_mut() {
             pending.source = fallback;
         }
-        row.emit_activate();
+        // A button's activate presses it for 250 ms before it clicks, so a Tab in
+        // that window would still open this row after the next one was highlighted.
+        self.keyboard_opened_place.replace(Some(row.clone()));
+        row.emit_clicked();
     }
 
     /// True while a Tab-stepped place is still on its way, which keeps its highlight.
