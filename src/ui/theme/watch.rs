@@ -4,19 +4,14 @@
 //! stylesheet, the custom theme folder and the targets
 //! its dotfile links point at, and the desktop's text scaling.
 
-use std::{
-    cell::RefCell,
-    fs, io,
-    path::PathBuf,
-    rc::Rc,
-    time::Duration,
-};
+use std::{cell::RefCell, fs, io, path::PathBuf, rc::Rc, time::Duration};
 
 use gtk::{gio, glib, prelude::*};
 
 use super::super::preferences::OmarchyVariant;
 use super::{
-    OmarchyRefresh, Theme, ThemeManager, builtins, is_custom_theme_event, linked_theme_targets, load_custom_themes, merge_builtin_and_custom_themes, themes_directory,
+    OmarchyRefresh, Theme, ThemeManager, builtins, is_custom_theme_event, linked_theme_targets,
+    load_custom_themes, merge_builtin_and_custom_themes, themes_directory,
 };
 use crate::{adapters::Watched, model::Location, services::LoadHandle};
 
