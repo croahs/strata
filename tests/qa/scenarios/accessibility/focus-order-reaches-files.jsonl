@@ -1,5 +1,4 @@
-{"scenario":"focus-order-reaches-files","modes":["columns","icons","list"],"layout":"us","mutation":null,"known_bug":null,"cost":{"columns":0.6,"icons":0.8,"list":0.8},"quality":{"impact":4,"coverage":3,"criticality":4,"diagnostic":4,"score":38,"note":"Tab from header reaches the non-empty file listing as one named stop; empty-directory-focus-and-tab-order covers only the empty pane"}}
-{"key":"Tab"}
+{"scenario":"focus-order-reaches-files","modes":["columns","icons","list"],"prefs":{"sidebar_show_network":false},"layout":"us","mutation":null,"known_bug":null,"cost":{"columns":0.6,"icons":0.8,"list":0.8},"quality":{"impact":4,"coverage":3,"criticality":4,"diagnostic":4,"score":38,"note":"The non-empty listing is one named stop; Tab and Shift+Tab from it step sidebar places with focus kept in the listing, while Tab from a header control moves focus instead; empty-directory-focus-and-tab-order covers the empty pane"}}
 {"keys_until":{"focused":true},"keys":["Tab"],"times":40,"check_first":true,"exhausted":"Tab never reached a file entry"}
 {"expect":{"focused":{"one_of":["archive","documents","pictures","readme.md","todo.txt"]}}}
 {"expect":{"present":{"container":"$root"}}}
@@ -7,5 +6,18 @@
 {"expect":{"description":{"target":{"container":"$root"},"text":"Files"}}}
 {"expect":{"focus_within":{"container":"$root"}}}
 {"key":"Tab"}
-{"wait":{"not":{"focus_within":{"container":"$root"}}},"message":"one Tab to leave the listing","timeout_ms":5000}
-{"expect":{"focused_widget":{"longer_than":0}},"message":"Tab left for an unnamed stop"}
+{"wait":{"directory":"home"},"message":"Tab from the listing to open the first sidebar place"}
+{"wait":{"focus_within":{"pane":"home"}},"message":"focus to follow into the opened place's listing"}
+{"key":"Tab"}
+{"wait":{"directory":"Trash"},"message":"Tab to open the next sidebar place"}
+{"wait":{"focus_within":{"pane":"Trash"}},"message":"focus to follow into Trash"}
+{"key":"shift+Tab"}
+{"wait":{"directory":"home"},"message":"Shift+Tab to open the previous sidebar place"}
+{"wait":{"focus_within":{"pane":"home"}},"message":"focus to follow back into home"}
+{"click":{"header":"Choose sort field"}}
+{"wait":{"menu_items":{}},"message":"the sort menu to open"}
+{"key":"Escape"}
+{"wait":{"focused_widget":"Choose sort field"},"message":"focus back on the sort button"}
+{"key":"Tab"}
+{"wait":{"not":{"focused_widget":"Choose sort field"}},"message":"Tab to move focus off the sort button"}
+{"expect":{"directory":"home"},"message":"Tab from a header control opened a place instead of moving focus"}

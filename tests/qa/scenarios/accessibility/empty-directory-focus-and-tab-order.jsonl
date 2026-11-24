@@ -1,4 +1,4 @@
-{"scenario":"empty-directory-focus-and-tab-order","modes":["columns","icons","list"],"layout":"us","mutation":null,"known_bug":null,"variants":[{"id":"keyboard","vars":{"id":"keyboard"}},{"id":"pointer","vars":{"id":"pointer"}}],"cost":{"columns-keyboard":0.6,"icons-keyboard":0.6,"list-keyboard":0.6,"columns-pointer":0.7,"icons-pointer":0.7,"list-pointer":0.8},"quality":{"impact":3,"coverage":4,"criticality":4,"diagnostic":4,"score":49,"note":"Empty folder pane takes focus and Tab/Shift+Tab leave and return it, via keyboard and pointer; no other scenario or unit test checks it"}}
+{"scenario":"empty-directory-focus-and-tab-order","modes":["columns","icons","list"],"layout":"us","mutation":null,"known_bug":null,"variants":[{"id":"keyboard","vars":{"id":"keyboard"}},{"id":"pointer","vars":{"id":"pointer"}}],"cost":{"columns-keyboard":0.6,"icons-keyboard":0.6,"list-keyboard":0.6,"columns-pointer":0.7,"icons-pointer":0.7,"list-pointer":0.8},"quality":{"impact":3,"coverage":4,"criticality":4,"diagnostic":4,"score":49,"note":"Empty folder pane takes focus as a described surface and Tab from it opens the first sidebar place with focus in its listing, via keyboard and pointer; no other scenario or unit test checks it"},"prefs":{"sidebar_show_network":false}}
 {"fs":{"path":"empty","mkdir":true},"variants":["keyboard"]}
 {"key":"F5","variants":["keyboard"]}
 {"wait":{"entry":"empty"},"message":"the entry 'empty' to appear","variants":["keyboard"]}
@@ -10,11 +10,8 @@
 {"remember":{"focused_widget":true},"as":"surface","variants":["keyboard"]}
 {"expect":{"description":{"target":{"remembered":"surface"},"text":"This directory is empty"}},"variants":["keyboard"]}
 {"key":"Tab","variants":["keyboard"]}
-{"wait":{"focus_outside":{"remembered":"surface"}},"message":"Tab to leave the empty pane","timeout_ms":5000,"variants":["keyboard"]}
-{"key":"shift+Tab","variants":["keyboard"]}
-{"wait":{"focused_widget_is":{"remembered":"surface"}},"message":"Shift+Tab to return to the empty pane","timeout_ms":5000,"variants":["keyboard"]}
-{"key":"shift+Tab","variants":["keyboard"]}
-{"wait":{"focus_outside":{"remembered":"surface"}},"message":"Shift+Tab to reach the control before the empty pane","timeout_ms":5000,"variants":["keyboard"]}
+{"wait":{"directory":"home"},"message":"Tab from the empty pane to open the first sidebar place","variants":["keyboard"]}
+{"wait":{"focus_within":{"pane":"home"}},"message":"focus to follow into the opened place's listing","variants":["keyboard"]}
 {"fs":{"path":"empty","mkdir":true},"variants":["pointer"]}
 {"key":"F5","variants":["pointer"]}
 {"wait":{"entry":"empty"},"message":"the entry 'empty' to appear","variants":["pointer"]}
@@ -28,8 +25,5 @@
 {"remember":{"focused_widget":true},"as":"surface","variants":["pointer"]}
 {"expect":{"description":{"target":{"remembered":"surface"},"text":"This directory is empty"}},"variants":["pointer"]}
 {"key":"Tab","variants":["pointer"]}
-{"wait":{"focus_outside":{"remembered":"surface"}},"message":"Tab to leave the empty pane","timeout_ms":5000,"variants":["pointer"]}
-{"key":"shift+Tab","variants":["pointer"]}
-{"wait":{"focused_widget_is":{"remembered":"surface"}},"message":"Shift+Tab to return to the empty pane","timeout_ms":5000,"variants":["pointer"]}
-{"key":"shift+Tab","variants":["pointer"]}
-{"wait":{"focus_outside":{"remembered":"surface"}},"message":"Shift+Tab to reach the control before the empty pane","timeout_ms":5000,"variants":["pointer"]}
+{"wait":{"directory":"home"},"message":"Tab from the empty pane to open the first sidebar place","variants":["pointer"]}
+{"wait":{"focus_within":{"pane":"home"}},"message":"focus to follow into the opened place's listing","variants":["pointer"]}

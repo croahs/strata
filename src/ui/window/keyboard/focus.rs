@@ -44,7 +44,7 @@ impl Dispatcher {
             return None;
         }
         let direction = plain_tab_direction(&event.press)?;
-        if !event.text_has_focus()
+        if self.tab_steps_places(event)
             && self
                 .sidebar
                 .state
@@ -55,6 +55,12 @@ impl Dispatcher {
         self.view
             .default_tab(direction)
             .then_some(Propagation::Stop)
+    }
+
+    /// Tab steps places from the listing, or from nowhere while a place loads;
+    /// elsewhere it moves focus, so every control stays reachable.
+    fn tab_steps_places(&self, event: &KeyEvent) -> bool {
+        !event.text_has_focus() && (event.focused.is_none() || self.view.item_view_has_focus())
     }
 
     fn tenxer_pane_focus(&self, browser: &Browser, event: &mut KeyEvent) -> KeyResult {

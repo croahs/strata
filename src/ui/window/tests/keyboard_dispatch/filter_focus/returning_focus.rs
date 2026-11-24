@@ -105,6 +105,7 @@ fn returning_focus_keeps_a_hit_rename() {
 
 fn tab_from_result_case(mode: BrowserMode) -> Result<(), String> {
     let fixture = filtered_fixture(mode, false);
+    hide_sidebar(&fixture);
     let field = show_filter_with_results(&fixture, "report", &IMMEDIATE_REPORTS)?;
     focus_first_result(&fixture, &field)?;
     let first_hit = hit_cursor(&fixture);

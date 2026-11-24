@@ -368,6 +368,13 @@ fn file_panes_have_focus(fixture: &KeyboardFixture) -> bool {
         .is_some_and(|focused| focused == panes || focused.is_ancestor(&panes))
 }
 
+/// Tab from the listing steps sidebar places while any show; with none it walks
+/// the focus order.
+fn hide_sidebar(fixture: &KeyboardFixture) {
+    fixture.sidebar.widget.set_visible(false);
+    pump(50);
+}
+
 fn sidebar_has_focus(fixture: &KeyboardFixture) -> bool {
     gtk::prelude::RootExt::focus(&fixture.window).is_some_and(|focused| {
         focused == fixture.sidebar.widget || focused.is_ancestor(&fixture.sidebar.widget)

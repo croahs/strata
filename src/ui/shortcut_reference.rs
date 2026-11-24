@@ -577,7 +577,7 @@ const DEFAULT_GO_TO: &[Shortcut] = &[
     row(Any(shown![PAGE_UP, PAGE_DOWN]), "Move one page"),
     row(
         Any(shown![FOCUS_NEXT, FOCUS_PREVIOUS]),
-        "Next / previous interface control",
+        "Next / previous sidebar place",
     ),
 ];
 

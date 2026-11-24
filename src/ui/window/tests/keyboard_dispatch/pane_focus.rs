@@ -132,6 +132,7 @@ fn default_map_tab_leaves_the_listing_in_one_press() {
         "ui::window::tests::keyboard_dispatch::pane_focus::default_map_tab_leaves_the_listing_in_one_press",
         || {
             let fixture = KeyboardFixture::new();
+            hide_sidebar(&fixture);
             let browser = fixture.view.browser();
             let home = Location::local(fixture._directory.path());
             add_subfolder(&fixture);
@@ -250,6 +251,7 @@ fn columns_tab_from_outside_lands_on_the_active_column() {
 
             // An open filter is the stop between the rows and the header actions, in
             // both directions.
+            hide_sidebar(&fixture);
             assert!(fixture.view.show_filter_with_query("inner"));
             // The entry maps once its revealer has run a frame.
             wait_until(|| {
@@ -286,6 +288,7 @@ fn empty_directory_focus_is_a_named_mapped_surface_and_tabs_out() {
         "ui::window::tests::keyboard_dispatch::pane_focus::empty_directory_focus_is_a_named_mapped_surface_and_tabs_out",
         || {
             let fixture = KeyboardFixture::new();
+            hide_sidebar(&fixture);
             PreferenceManager::shared().set_arrow_navigation_scoped(false);
             let home = Location::local(fixture._directory.path());
             let footer = footer_button(&fixture);
