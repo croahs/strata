@@ -1,0 +1,5 @@
+#!/bin/bash
+# Omarchy theme-set hook: tell running Strata to re-read the theme, as Omarchy
+# does for btop. Install: omarchy hook install theme-set contrib/strata-reload
+pkill -SIGUSR2 -x strata
+(( $? <= 1 ))

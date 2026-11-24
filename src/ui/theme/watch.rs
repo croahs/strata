@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 
 //! Keeps the manager current with files that change behind it: the user
-//! stylesheet, Omarchy's theme state, the custom theme folder and the targets
+//! stylesheet, the custom theme folder and the targets
 //! its dotfile links point at, and the desktop's text scaling.
 
 use std::{
     cell::RefCell,
     fs, io,
-    path::{Path, PathBuf},
+    path::PathBuf,
     rc::Rc,
     time::Duration,
 };
@@ -16,8 +16,7 @@ use gtk::{gio, glib, prelude::*};
 
 use super::super::preferences::OmarchyVariant;
 use super::{
-    OmarchyRefresh, Theme, ThemeManager, builtins, is_custom_theme_event, is_omarchy_theme_event,
-    linked_theme_targets, load_custom_themes, merge_builtin_and_custom_themes, themes_directory,
+    OmarchyRefresh, Theme, ThemeManager, builtins, is_custom_theme_event, linked_theme_targets, load_custom_themes, merge_builtin_and_custom_themes, themes_directory,
 };
 use crate::{adapters::Watched, model::Location, services::LoadHandle};
 
@@ -116,40 +115,17 @@ impl ThemeManager {
         });
     }
 
-    pub(super) fn monitor_omarchy(
-        self: &Rc<Self>,
-        directories: &[PathBuf],
-        theme_directory: Option<&Path>,
-    ) {
-        let mut monitors = self.omarchy_monitors.take();
-        monitors.retain(|(path, _)| directories.contains(path));
-        for path in directories {
-            if monitors.iter().any(|(watched, _)| watched == path) {
-                continue;
-            }
-            let colors =
-                (Some(path.as_path()) == theme_directory).then(|| path.join("colors.toml"));
-            let relevant = move |file: &gio::File| {
-                is_omarchy_theme_event(file)
-                    || colors
-                        .as_ref()
-                        .is_some_and(|colors| file.path().as_ref() == Some(colors))
+    /// Re-reads Omarchy's theme when `omarchy-theme-set` signals SIGUSR2 through a
+    /// theme-set hook, as Omarchy does for btop, once every file is in place.
+    pub(super) fn follow_omarchy_signal(self: &Rc<Self>) {
+        let weak = Rc::downgrade(self);
+        glib_unix::unix_signal_add_local(libc::SIGUSR2, move || {
+            let Some(manager) = weak.upgrade() else {
+                return glib::ControlFlow::Break;
             };
-            let monitor = self.watch_for_refresh(
-                (&Location::local(path), Watched::Folder),
-                move |_, file, other_file| relevant(file) || other_file.is_some_and(&relevant),
-                Self::schedule_omarchy_refresh,
-            );
-            monitors.push((path.clone(), monitor));
-        }
-        self.omarchy_monitors.replace(monitors);
-    }
-
-    fn schedule_omarchy_refresh(self: &Rc<Self>) {
-        self.schedule_refresh(
-            |manager| &manager.pending_omarchy_refresh,
-            Self::refresh_omarchy_state,
-        );
+            manager.refresh_omarchy_state();
+            glib::ControlFlow::Continue
+        });
     }
 
     pub(in crate::ui) fn refresh_omarchy_state(self: &Rc<Self>) {
@@ -163,7 +139,6 @@ impl ThemeManager {
     }
 
     fn apply_omarchy_refresh(self: &Rc<Self>, refresh: OmarchyRefresh) {
-        self.monitor_omarchy(&refresh.directories, refresh.theme_directory.as_deref());
         let unchanged = self.omarchy_state.replace(refresh.state.clone()) == refresh.state;
         if let Some(state) = &refresh.state {
             self.preferences.set_active_omarchy_theme(&state.name);

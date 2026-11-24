@@ -3,7 +3,7 @@
 use std::{
     cell::{Cell, RefCell},
     fs, io,
-    path::{Path, PathBuf},
+    path::PathBuf,
     rc::Rc,
 };
 
@@ -47,7 +47,7 @@ use library::{
     load_custom_themes, merge_builtin_and_custom_themes, themes_directory, validate_tokens,
 };
 use listeners::{ThemeListeners, on_change};
-use omarchy_state::{OmarchyRefresh, OmarchyState, is_omarchy_theme_event};
+use omarchy_state::{OmarchyRefresh, OmarchyState};
 pub(super) use source_style::{new_source_buffer, source_languages};
 use source_style::{resolved_source_palette, stage_source_style_scheme};
 use system_appearance::SystemAppearance;
@@ -187,8 +187,6 @@ pub struct ThemeManager {
     system_appearance: SystemAppearance,
     omarchy_available: Cell<bool>,
     omarchy_state: RefCell<Option<OmarchyState>>,
-    omarchy_monitors: RefCell<Vec<(PathBuf, LoadHandle)>>,
-    pending_omarchy_refresh: RefCell<Option<glib::SourceId>>,
     themes_monitor: RefCell<Option<LoadHandle>>,
     linked_theme_monitors: RefCell<Vec<(PathBuf, LoadHandle)>>,
     linked_theme_targets: RefCell<Vec<PathBuf>>,
@@ -235,7 +233,7 @@ impl ThemeManager {
             system_appearance,
             omarchy.state,
         ));
-        manager.start(&omarchy.directories, omarchy.theme_directory.as_deref());
+        manager.start();
         manager
     }
 
@@ -263,8 +261,6 @@ impl ThemeManager {
             system_appearance,
             omarchy_available: Cell::new(omarchy_available),
             omarchy_state: RefCell::new(omarchy_state),
-            omarchy_monitors: RefCell::new(Vec::new()),
-            pending_omarchy_refresh: RefCell::new(None),
             themes_monitor: RefCell::new(None),
             linked_theme_monitors: RefCell::new(Vec::new()),
             linked_theme_targets: RefCell::new(Vec::new()),
@@ -285,7 +281,7 @@ impl ThemeManager {
     }
 
     /// Applies the theme and starts following the preferences and files it reads.
-    fn start(self: &Rc<Self>, omarchy_directories: &[PathBuf], omarchy_theme: Option<&Path>) {
+    fn start(self: &Rc<Self>) {
         let weak = Rc::downgrade(self);
         self.preferences.observe(Rc::new(move || {
             if let Some(manager) = weak.upgrade() {
@@ -301,7 +297,7 @@ impl ThemeManager {
         self.monitor_text_scaling();
         self.monitor_system_appearance();
         portal_text_scale::follow_if_portals_disabled();
-        self.monitor_omarchy(omarchy_directories, omarchy_theme);
+        self.follow_omarchy_signal();
         self.monitor_custom_themes(themes_directory().is_dir());
         self.monitor_linked_themes(linked_theme_targets(&themes_directory()));
         self.user_provider.load_from_string(&read_user_stylesheet());

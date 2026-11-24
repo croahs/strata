@@ -90,6 +90,7 @@ wayland-client = { version = "0.31.15", optional = true }
 wayland-protocols-misc = { version = "0.3.12", features = ["client"], optional = true }
 wayland-protocols-wlr = { version = "0.3.12", features = ["client"], optional = true }
 xkbcommon = { version = "0.9.0", default-features = false, optional = true }
+glib-unix = "0.22"
 
 [dev-dependencies]
 rustls = { version = "0.23.46", default-features = false, features = ["std", "ring", "tls12"] }

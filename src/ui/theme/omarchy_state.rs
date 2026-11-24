@@ -3,12 +3,7 @@
 //! Reading Omarchy's current theme state and turning its Quattro colors into
 //! Strata tokens.
 
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
-
-use gtk::{gio, glib, prelude::*};
+use std::{fs, path::PathBuf};
 
 use super::{
     super::preferences::OmarchyVariant, SourcePalette, ThemeTokens, blend, canonical_color,
@@ -34,33 +29,17 @@ impl OmarchyState {
 pub(super) struct OmarchyRefresh {
     pub(super) state: Option<OmarchyState>,
     pub(super) name_exists: bool,
-    pub(super) theme_directory: Option<PathBuf>,
-    /// Ancestor watches survive moving away or replacing the current state tree.
-    pub(super) directories: Vec<PathBuf>,
 }
 
 impl OmarchyRefresh {
     pub(super) fn read() -> Self {
         let state = omarchy_state_dir();
-        let home = glib::home_dir();
-        let theme = state.join("theme");
-        // Watch the target's identity, not the stable symlink spelling.
-        let theme_directory = fs::canonicalize(&theme).ok();
-        let directories = theme_directory
-            .iter()
-            .map(PathBuf::as_path)
-            .chain(state.ancestors().take_while(|path| path.starts_with(&home)))
-            .filter(|path| path.is_dir())
-            .map(Path::to_path_buf)
-            .collect();
         let read = |name: &str| fs::read_to_string(state.join(name)).ok();
         Self {
             state: read("theme.name")
                 .zip(read("theme/colors.toml"))
                 .map(|(name, colors)| OmarchyState { name, colors }),
             name_exists: state.join("theme.name").is_file(),
-            theme_directory,
-            directories,
         }
     }
 }
@@ -136,16 +115,6 @@ pub(super) fn title_case_slug(slug: &str) -> String {
         })
         .collect::<Vec<_>>()
         .join(" ")
-}
-
-pub(super) fn is_omarchy_theme_event(file: &gio::File) -> bool {
-    file.path().is_some_and(|path| {
-        let state = omarchy_state_dir();
-        state.starts_with(&path)
-            || path == state.join("theme")
-            || path == state.join("theme.name")
-            || path == state.join("theme/colors.toml")
-    })
 }
 
 pub(in crate::ui) fn omarchy_state_dir() -> PathBuf {
